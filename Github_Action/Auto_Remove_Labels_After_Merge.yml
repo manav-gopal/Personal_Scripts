@@ -1,0 +1,45 @@
+name: Remove All Labels When PR is Merged
+
+on:
+  pull_request:
+    types: [closed]  # 'closed' event includes merged PRs
+
+jobs:
+  remove_labels:
+    name: Remove Labels
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write  # needed to remove labels
+
+    steps:
+      - name: Remove all labels (with exceptions)
+        if: github.event.pull_request.merged == true
+        uses: actions/github-script@v6
+        env:
+          # Comma-separated list of labels you want to keep. Example: 'do-not-remove, important'
+          EXCEPTION_LABELS: 'example-label' 
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const currentLabels = context.payload.pull_request.labels;
+            
+            // Split the EXCEPTION_LABELS env var by commas, or default to empty array
+            const exceptionLabels = process.env.EXCEPTION_LABELS
+              ? process.env.EXCEPTION_LABELS.split(',').map(label => label.trim())
+              : [];
+
+            for (const label of currentLabels) {
+              if (!exceptionLabels.includes(label.name)) {
+                await github.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  name: label.name
+                });
+                console.log(`Removed label: ${label.name}`);
+              } else {
+                console.log(`Skipped label: ${label.name} (exception)`);
+              }
+            }

@@ -1,0 +1,17 @@
+name: Assign Author to Pull Request
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  assign_author:
+    name: Assign Author
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Assign Author
+        uses: toshimaru/auto-author-assign@v1.6.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
